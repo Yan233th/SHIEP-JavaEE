@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  postgres:
+    container_name: sms-db
+    image: postgres:alpine
+    ports:
+      - "42001:5432"
+    environment:
+      POSTGRES_DB: sms_db
+      POSTGRES_PASSWORD: 1145141919810
+    volumes:
+      - sms-postgres-data:/var/lib/postgresql/data
+
+  redis:
+    container_name: sms-redis
+    image: redis:alpine
+    ports:
+      - "42002:6379"
+    volumes:
+      - sms-redis-data:/data
+
+  minio:
+    container_name: sms-minio
+    image: minio/minio
+    ports:
+      - "42003:9000"
+      - "42004:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    command: server /data --console-address ":9001"
+    volumes:
+      - sms-minio-data:/data
+
+  elasticsearch:
+    container_name: sms-elasticsearch
+    image: elasticsearch:8.11.0
+    ports:
+      - "42005:9200"
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - sms-es-data:/usr/share/elasticsearch/data
+
+volumes:
+  sms-postgres-data:
+  sms-redis-data:
+  sms-minio-data:
+  sms-es-data:

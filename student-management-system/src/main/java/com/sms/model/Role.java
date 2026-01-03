@@ -1,5 +1,6 @@
 package com.sms.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.util.HashSet;
@@ -24,5 +25,6 @@ public class Role {
         joinColumns = @JoinColumn(name = "role_id"),
         inverseJoinColumns = @JoinColumn(name = "menu_id")
     )
+    @JsonIgnoreProperties("roles")
     private Set<Menu> menus = new HashSet<>();
 }

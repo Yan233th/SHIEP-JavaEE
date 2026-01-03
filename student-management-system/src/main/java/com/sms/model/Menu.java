@@ -1,5 +1,6 @@
 package com.sms.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.util.HashSet;
@@ -27,5 +28,6 @@ public class Menu {
     private Integer sortOrder;
 
     @ManyToMany(mappedBy = "menus")
+    @JsonIgnore
     private Set<Role> roles = new HashSet<>();
 }
