@@ -1,11 +1,9 @@
 package com.sms.repository;
 
+import com.sms.model.Menu;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import com.sms.model.User;
-
 @Repository
-public interface UserRepository extends JpaRepository<User, Long> {
-    Optional<User> findByUsername(String username);
+public interface MenuRepository extends JpaRepository<Menu, Long> {
 }
