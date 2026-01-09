@@ -1,5 +1,5 @@
 import request from '@/utils/request';
-import type { Clazz, ApiResponse } from '@/types';
+import type { ApiResponse, Clazz } from '@/types';
 
 export const clazzApi = {
   getAll: () =>
@@ -8,23 +8,11 @@ export const clazzApi = {
   getById: (id: number) =>
     request.get<ApiResponse<Clazz>>(`/class/${id}`),
 
-  getByClassCode: (classCode: string) =>
-    request.get<ApiResponse<Clazz>>(`/class/code/${classCode}`),
-
-  getByDepartment: (deptId: number) =>
+  getByDeptId: (deptId: number) =>
     request.get<ApiResponse<Clazz[]>>(`/class/dept/${deptId}`),
 
   getByGrade: (grade: string) =>
     request.get<ApiResponse<Clazz[]>>(`/class/grade/${grade}`),
-
-  getByDeptAndGrade: (deptId: number, grade: string) =>
-    request.get<ApiResponse<Clazz[]>>(`/class/dept/${deptId}/grade/${grade}`),
-
-  getAllGrades: () =>
-    request.get<ApiResponse<string[]>>('/class/grades'),
-
-  getMajorsByDept: (deptId: number) =>
-    request.get<ApiResponse<string[]>>(`/class/majors/${deptId}`),
 
   create: (data: Partial<Clazz>) =>
     request.post<ApiResponse<Clazz>>('/class', data),

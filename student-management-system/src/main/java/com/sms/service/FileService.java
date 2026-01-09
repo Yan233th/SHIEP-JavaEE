@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.InvalidKeyException;
@@ -49,8 +50,8 @@ public class FileService {
             );
         }
 
-        // 返回文件URL
-        return endpoint + "/" + bucketName + "/" + objectName;
+        // 返回代理URL
+        return "/api/files/proxy?url=" + endpoint + "/" + bucketName + "/" + objectName;
     }
 
     public String uploadAvatar(MultipartFile file, Long userId) throws Exception {
@@ -84,6 +85,21 @@ public class FileService {
                         .object(objectName)
                         .build()
         );
+    }
+
+    public byte[] downloadFile(String bucketName, String objectName) throws Exception {
+        try (InputStream stream = minioClient.getObject(GetObjectArgs.builder()
+                .bucket(bucketName)
+                .object(objectName)
+                .build())) {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            byte[] buffer = new byte[8192];
+            int bytesRead;
+            while ((bytesRead = stream.read(buffer)) != -1) {
+                baos.write(buffer, 0, bytesRead);
+            }
+            return baos.toByteArray();
+        }
     }
 
     private void ensureBucketExists() throws Exception {

@@ -1,13 +1,11 @@
 package com.sms.controller;
 
-import com.sms.dto.ApiResponse;
 import com.sms.service.FileService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.util.HashMap;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/files")
@@ -16,42 +14,54 @@ public class FileController {
     @Autowired
     private FileService fileService;
 
-    @PostMapping("/upload")
-    public ApiResponse<Map<String, String>> uploadFile(
-            @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "folder", defaultValue = "uploads") String folder) {
+    @GetMapping("/proxy")
+    public ResponseEntity<byte[]> proxyFile(@RequestParam String url) {
         try {
-            String url = fileService.uploadFile(file, folder);
-            Map<String, String> result = new HashMap<>();
-            result.put("url", url);
-            result.put("filename", file.getOriginalFilename());
-            return ApiResponse.success(result);
-        } catch (Exception e) {
-            return ApiResponse.error("文件上传失败: " + e.getMessage());
-        }
-    }
+            String path = url.replace("http://localhost:42003/", "")
+                            .replace("http://minio:9000/", "");
+            String[] parts = path.split("/", 2);
+            if (parts.length < 2) {
+                return ResponseEntity.badRequest().build();
+            }
 
-    @PostMapping("/avatar/{userId}")
-    public ApiResponse<Map<String, String>> uploadAvatar(
-            @RequestParam("file") MultipartFile file,
-            @PathVariable Long userId) {
-        try {
-            String url = fileService.uploadAvatar(file, userId);
-            Map<String, String> result = new HashMap<>();
-            result.put("url", url);
-            return ApiResponse.success(result);
-        } catch (Exception e) {
-            return ApiResponse.error("头像上传失败: " + e.getMessage());
-        }
-    }
+            String bucketName = parts[0];
+            String objectName = parts[1];
 
-    @DeleteMapping
-    public ApiResponse<Void> deleteFile(@RequestParam String objectName) {
-        try {
-            fileService.deleteFile(objectName);
-            return ApiResponse.success(null);
+            byte[] data = fileService.downloadFile(bucketName, objectName);
+
+            // 根据文件扩展名设置Content-Type
+            String contentType = "application/octet-stream";
+            if (objectName.endsWith(".png")) {
+                contentType = "image/png";
+            } else if (objectName.endsWith(".jpg") || objectName.endsWith(".jpeg")) {
+                contentType = "image/jpeg";
+            } else if (objectName.endsWith(".gif")) {
+                contentType = "image/gif";
+            } else if (objectName.endsWith(".pdf")) {
+                contentType = "application/pdf";
+            } else if (objectName.endsWith(".txt")) {
+                contentType = "text/plain; charset=utf-8";
+            } else if (objectName.endsWith(".html") || objectName.endsWith(".htm")) {
+                contentType = "text/html; charset=utf-8";
+            } else if (objectName.endsWith(".json")) {
+                contentType = "application/json; charset=utf-8";
+            } else if (objectName.endsWith(".xml")) {
+                contentType = "application/xml; charset=utf-8";
+            }
+
+            // 设置Content-Disposition为inline，让浏览器预览而不是下载
+            // 从objectName中提取文件名
+            String fileName = objectName.substring(objectName.lastIndexOf("/") + 1);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.parseMediaType(contentType));
+            headers.add(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileName + "\"");
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(data);
         } catch (Exception e) {
-            return ApiResponse.error("文件删除失败: " + e.getMessage());
+            return ResponseEntity.notFound().build();
         }
     }
 }

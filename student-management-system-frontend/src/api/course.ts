@@ -26,8 +26,14 @@ export const courseApi = {
   uploadAttachment: (courseId: number, file: File) => {
     const formData = new FormData();
     formData.append('file', file);
-    return request.post(`/upload/course/${courseId}`, formData, {
+    return request.post(`/courses/${courseId}/attachments`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
+
+  getAttachments: (courseId: number) =>
+    request.get(`/courses/${courseId}/attachments`),
+
+  deleteAttachment: (attachmentId: number) =>
+    request.delete(`/courses/attachments/${attachmentId}`),
 };

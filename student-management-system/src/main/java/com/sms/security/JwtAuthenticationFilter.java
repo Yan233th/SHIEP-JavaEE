@@ -29,7 +29,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
         // 跳过认证相关的路径
-        return path.startsWith("/api/auth/");
+        return path.startsWith("/api/auth/") ||
+               path.startsWith("/api/dict/") ||
+               path.startsWith("/api/files/");
     }
 
     @Override
@@ -55,6 +57,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 }
             } catch (Exception e) {
                 // Token invalid, continue without authentication
+                logger.error("JWT Authentication failed: " + e.getMessage(), e);
             }
         }
 

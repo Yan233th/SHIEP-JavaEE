@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Table, Button, Space, Modal, Form, Input, InputNumber, message, Popconfirm, Tag, Upload } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined, FileOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined, FileOutlined, DownloadOutlined, EyeOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { Course } from '@/types';
 import { courseApi } from '@/api/course';
@@ -14,11 +14,29 @@ const CoursePage: React.FC = () => {
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [form] = Form.useForm();
 
+  // 预览相关状态
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewAttachment, setPreviewAttachment] = useState<any>(null);
+
   const fetchCourses = async () => {
     setLoading(true);
     try {
       const response = await courseApi.getAll();
-      setCourses(response.data);
+      const courses = response.data;
+
+      // 为每个课程加载附件数据
+      const coursesWithAttachments = await Promise.all(
+        courses.map(async (course) => {
+          try {
+            const attachmentsRes = await courseApi.getAttachments(course.id);
+            return { ...course, attachments: attachmentsRes.data.data || [] };
+          } catch {
+            return { ...course, attachments: [] };
+          }
+        })
+      );
+
+      setCourses(coursesWithAttachments);
     } catch {
       message.error('获取课程列表失败');
     } finally {
@@ -80,6 +98,46 @@ const CoursePage: React.FC = () => {
     return false;
   };
 
+  // 预览附件
+  const handlePreviewAttachment = (attachment: any) => {
+    setPreviewAttachment(attachment);
+    setPreviewVisible(true);
+  };
+
+  // 下载附件
+  const handleDownloadAttachment = async (attachment: any) => {
+    try {
+      const response = await fetch(attachment.fileUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = attachment.fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      message.success('下载成功');
+    } catch {
+      message.error('下载失败');
+    }
+  };
+
+  // 根据文件名判断文件类型
+  const getFileTypeFromName = (fileName: string) => {
+    const ext = fileName.toLowerCase().split('.').pop();
+    if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(ext || '')) {
+      return 'image';
+    }
+    if (ext === 'pdf') {
+      return 'pdf';
+    }
+    if (['txt', 'log', 'md', 'json', 'xml', 'html', 'htm', 'css', 'js', 'ts', 'jsx', 'tsx'].includes(ext || '')) {
+      return 'text';
+    }
+    return 'other';
+  };
+
   const columns: ColumnsType<Course> = [
     {
       title: 'ID',
@@ -114,10 +172,13 @@ const CoursePage: React.FC = () => {
       render: (_, record) => (
         <Space>
           {record.attachments?.map((att) => (
-            <Tag key={att.id} icon={<FileOutlined />}>
-              <a href={att.fileUrl} target="_blank" rel="noopener noreferrer">
-                {att.fileName}
-              </a>
+            <Tag
+              key={att.id}
+              icon={<EyeOutlined />}
+              style={{ cursor: 'pointer' }}
+              onClick={() => handlePreviewAttachment(att)}
+            >
+              {att.fileName}
             </Tag>
           ))}
           <Upload
@@ -203,6 +264,76 @@ const CoursePage: React.FC = () => {
             <TextArea rows={4} />
           </Form.Item>
         </Form>
+      </Modal>
+
+      {/* 附件预览Modal */}
+      <Modal
+        title="附件预览"
+        open={previewVisible}
+        onCancel={() => setPreviewVisible(false)}
+        width={800}
+        footer={[
+          <Button
+            key="download"
+            type="primary"
+            icon={<DownloadOutlined />}
+            onClick={() => previewAttachment && handleDownloadAttachment(previewAttachment)}
+          >
+            下载
+          </Button>,
+          <Button key="close" onClick={() => setPreviewVisible(false)}>
+            关闭
+          </Button>,
+        ]}
+      >
+        {previewAttachment && (() => {
+          const fileType = getFileTypeFromName(previewAttachment.fileName);
+          return (
+            <div style={{ maxHeight: '600px', overflow: 'auto' }}>
+              {/* 图片预览 */}
+              {fileType === 'image' && (
+                <img
+                  src={previewAttachment.fileUrl}
+                  alt={previewAttachment.fileName}
+                  style={{ width: '100%' }}
+                />
+              )}
+
+              {/* PDF预览 */}
+              {fileType === 'pdf' && (
+                <iframe
+                  src={previewAttachment.fileUrl}
+                  style={{ width: '100%', height: '600px', border: 'none' }}
+                  title={previewAttachment.fileName}
+                />
+              )}
+
+              {/* 文本文件预览 */}
+              {fileType === 'text' && (
+                <div style={{ padding: '16px', background: '#f5f5f5', borderRadius: '4px' }}>
+                  <iframe
+                    src={previewAttachment.fileUrl}
+                    style={{ width: '100%', height: '400px', border: 'none', background: 'white' }}
+                    title={previewAttachment.fileName}
+                  />
+                </div>
+              )}
+
+              {/* Office文档和其他文件 */}
+              {fileType === 'other' && (
+                <div style={{ textAlign: 'center', padding: '40px' }}>
+                  <FileOutlined style={{ fontSize: '64px', color: '#1890ff' }} />
+                  <p style={{ marginTop: '16px', fontSize: '16px' }}>
+                    {previewAttachment.fileName}
+                  </p>
+                  <p style={{ color: '#999' }}>
+                    此文件类型不支持在线预览，请点击下载按钮下载后查看
+                  </p>
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </Modal>
     </div>
   );
