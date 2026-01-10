@@ -1,0 +1,44 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:42001/sms_db
+    username: postgres
+    password: 1145141919810
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  data:
+    redis:
+      host: localhost
+      port: 42002
+      timeout: 10000
+  rabbitmq:
+    host: localhost
+    port: 42006
+    username: admin
+    password: admin123
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+
+# MinIO配置
+minio:
+  endpoint: http://localhost:42003
+  access-key: minioadmin
+  secret-key: minioadmin123
+  bucket-name: sms-files
+
+# JWT配置
+jwt:
+  secret: sms-secret-key-for-jwt-token-generation-must-be-at-least-256-bits
+  expiration: 86400000
+
+# Elasticsearch配置
+spring.elasticsearch:
+  uris: http://localhost:42005

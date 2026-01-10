@@ -9,6 +9,8 @@ services:
       POSTGRES_PASSWORD: 1145141919810
     volumes:
       - sms-postgres-data:/var/lib/postgresql/data
+    networks:
+      - sms-network
 
   redis:
     container_name: sms-redis
@@ -17,6 +19,8 @@ services:
       - "42002:6379"
     volumes:
       - sms-redis-data:/data
+    networks:
+      - sms-network
 
   minio:
     container_name: sms-minio
@@ -30,6 +34,8 @@ services:
     command: server /data --console-address ":9001"
     volumes:
       - sms-minio-data:/data
+    networks:
+      - sms-network
 
   elasticsearch:
     container_name: sms-elasticsearch
@@ -42,9 +48,35 @@ services:
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
     volumes:
       - sms-es-data:/usr/share/elasticsearch/data
+    networks:
+      - sms-network
+
+  rabbitmq:
+    container_name: sms-rabbitmq
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "42006:5672"
+      - "42007:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin123
+    volumes:
+      - sms-rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - sms-network
 
 volumes:
   sms-postgres-data:
+    name: sms-postgres-data
   sms-redis-data:
+    name: sms-redis-data
   sms-minio-data:
+    name: sms-minio-data
   sms-es-data:
+    name: sms-es-data
+  sms-rabbitmq-data:
+    name: sms-rabbitmq-data
+
+networks:
+  sms-network:
+    name: sms-network
