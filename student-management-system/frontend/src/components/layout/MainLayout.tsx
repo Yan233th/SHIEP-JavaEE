@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Layout, Menu, Dropdown, Avatar, theme } from 'antd';
+import { Layout, Menu, Dropdown, Avatar, theme, notification } from 'antd';
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
@@ -13,6 +13,7 @@ import {
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/store';
+import { useWebSocket } from '@/hooks/useWebSocket';
 import type { MenuProps } from 'antd';
 
 const { Header, Sider, Content } = Layout;
@@ -62,6 +63,19 @@ const MainLayout: React.FC = () => {
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
+
+  // WebSocket 实时通知
+  useWebSocket({
+    enabled: !!user, // 只有登录用户才连接
+    onNotification: (notif) => {
+      notification.info({
+        message: notif.title,
+        description: notif.content,
+        placement: 'topRight',
+        duration: 4.5,
+      });
+    },
+  });
 
   const handleMenuClick = (e: { key: string }) => {
     navigate(e.key);

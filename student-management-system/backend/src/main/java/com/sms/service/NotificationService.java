@@ -1,10 +1,11 @@
 package com.sms.service;
 
 import com.sms.dto.NotificationMessage;
+import com.sms.event.NotificationCreatedEvent;
 import com.sms.model.Notification;
-import com.sms.rabbitmq.NotificationProducer;
 import com.sms.repository.NotificationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,7 +22,7 @@ public class NotificationService {
     private NotificationRepository notificationRepository;
 
     @Autowired
-    private NotificationProducer notificationProducer;
+    private ApplicationEventPublisher eventPublisher;
 
     /**
      * 发送广播通知给所有用户
@@ -128,12 +129,21 @@ public class NotificationService {
 
     /**
      * 创建通知
+     * 使用事件机制，确保在事务提交后才发送到 RabbitMQ
      */
     @Transactional
     public Notification createNotification(Notification notification) {
+        System.out.println("=== 开始创建通知 ===");
+        System.out.println("通知标题: " + notification.getTitle());
+        System.out.println("通知内容: " + notification.getContent());
+
         Notification saved = notificationRepository.save(notification);
-        // 发送到 RabbitMQ 队列进行异步处理
-        notificationProducer.sendNotification(saved);
+        System.out.println("通知已保存到数据库，ID: " + saved.getId());
+
+        // 发布事件，事件监听器会在事务提交后发送到 RabbitMQ
+        eventPublisher.publishEvent(new NotificationCreatedEvent(this, saved));
+        System.out.println("事件已发布");
+
         return saved;
     }
 }

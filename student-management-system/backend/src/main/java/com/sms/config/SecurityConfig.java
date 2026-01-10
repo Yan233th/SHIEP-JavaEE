@@ -39,6 +39,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/files/**").permitAll()
                 .requestMatchers("/api/search/**").permitAll()
                 .requestMatchers("/api/search/attachments").permitAll()
+                .requestMatchers("/ws/**").permitAll()  // WebSocket 端点
                 .requestMatchers("/api/notifications/**").authenticated()
                 .anyRequest().authenticated()
             )
